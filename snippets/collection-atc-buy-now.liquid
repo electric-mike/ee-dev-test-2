@@ -1,0 +1,170 @@
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        //------------
+        // ATC / BUY NOW
+        //------------
+        var atcBuyNow = {
+            init: function() {
+                //global variables
+                this.atcOverride = '{{ settings.enable_collection_atc_override }}' === 'true';
+                this.enableSelectVariant = '{{ settings.enable_select_variant }}' === 'true';
+
+                //add event listeners
+                this.addListeners();
+            },
+
+            addListeners: function() {
+                var self = this;
+
+                //add click event listener to all special buttons
+                var buttons = document.querySelectorAll('button[data-atc-buy-now]')
+                buttons.forEach(function(el) {
+                    el.addEventListener('click', self.addToCart.bind(self, el));
+                });
+
+                if(this.enableSelectVariant) {
+                    var selects = document.querySelectorAll('.section-variant')
+                    selects.forEach(function(el) {
+                        //trigger one time
+                        self.changeVariant.call(self, el);
+
+                        //check for oos selected
+                        self.checkOOS.call(self, el);
+
+                        //add event listener
+                        el.addEventListener('change', self.changeVariant.bind(self, el));
+                    });
+                }
+            },
+
+            changeVariant: function(sentEl) {
+                var self = this;
+                var sentElId = sentEl.value;
+                var sentElAvailable = sentEl.querySelector('option:checked').dataset.available === 'true';
+                var sentPrice = sentEl.querySelector('option:checked').dataset.price;
+                var sentImage = sentEl.querySelector('option:checked').dataset.image;
+                var parentDiv = sentEl.closest('div');
+                var price = parentDiv.querySelector('dd span');
+                var buttonEl = parentDiv.querySelector('button[data-atc-buy-now]');
+                var imageEl = parentDiv.querySelector('.grid-view-item__image');
+                var linkEl = parentDiv.querySelector('a');
+
+                if(buttonEl && buttonEl.dataset && buttonEl.dataset.variantId && sentElId) {
+                    buttonEl.dataset.variantId = sentElId;
+                    linkEl.href = linkEl.href.split('?')[0] + '?variant=' + sentElId;
+
+                    if(sentElAvailable) {
+                        buttonEl.querySelector('span').innerHTML = this.atcOverride ? 'Add to cart' : 'Buy now';
+                        buttonEl.removeAttribute('aria-disabled');
+                    } else {
+                        buttonEl.querySelector('span').innerHTML = 'Sold out';
+                        buttonEl.setAttribute('aria-disabled', true);
+                    }
+                }
+
+                if(imageEl && !sentImage.includes('no-image')) {
+                    imageEl.classList.remove('lazyloaded');
+                    imageEl.dataset.srcset = '';
+                    imageEl.srcset = '';
+                    imageEl.src = '';
+
+                    imageEl.dataset.src = sentImage;
+                    imageEl.classList.add('lazyload');
+                }
+
+                price.innerHTML = sentPrice;
+            },
+
+            checkOOS: function(sentEl) {
+                var sentElAvailable = sentEl.querySelector('option:checked').dataset.available === 'true';
+                if(!sentElAvailable) {
+                    sentEl.querySelector('option[data-available="true"]').selected = 'selected';
+                    this.changeVariant.call(this, sentEl);
+                }
+            },
+
+            post: function(data, callback) {
+                var request = new XMLHttpRequest();
+                request.onreadystatechange = function() {
+                    if (request.readyState === 4) {
+                        callback(request);
+                    }
+                }
+
+                request.open("POST", data.url, true);
+                request.setRequestHeader('Content-Type', 'application/json');
+                // https://community.shopify.com/c/Shopify-Design/AJAX-POST-cart-add-js-NEVER-returns-422-only-200-OK-on/td-p/375736
+                request.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                request.send(JSON.stringify(data.data));
+            },
+
+            addToCart: function(sentEl) {
+                var self = this;
+                var id = sentEl.dataset.variantId;
+                var parentDiv = sentEl.closest('div');
+
+                // if ATC init theme constructor for product
+                // this is where we access the cart popup
+                if(this.atcOverride) {
+                    var themeProduct = new window.theme.Product(parentDiv);
+                }
+
+                this.toggleButtonLoading(sentEl, true);
+
+                this.post(
+                    {
+                        url: '/cart/add.js',
+                        data: {
+                            id: id,
+                            form_type: 'product'
+                        }
+                    },
+                    function(data) {
+                        if (data.status === 200) {
+                            //if atc, do theme popup, else redirect to checkout
+                            if(self.atcOverride) {
+                                themeProduct._setupCartPopup(JSON.parse(data.responseText));
+                                self.toggleButtonLoading(sentEl, false);
+                            } else {
+                                window.location.replace('/checkout');
+                            }
+                        } else {
+                            var parentEl = sentEl.closest('div');
+                            self.toggleButtonLoading(sentEl, false);
+                            parentEl.querySelector('div[data-error-message-wrapper]').style.display = 'block';
+                            parentEl.querySelector('span[data-error-message]').innerHTML = JSON.parse(data.responseText).description;
+                        }
+                    }
+                );
+            },
+
+            toggleButtonLoading: function(sentEl, disable) {
+                if(disable) {
+                    sentEl.querySelector('span[data-add-to-cart-text]').classList.add('hide');
+                    sentEl.querySelector('span[data-loader]').classList.remove('hide');
+                } else {
+                    sentEl.querySelector('span[data-add-to-cart-text]').classList.remove('hide');
+                    sentEl.querySelector('span[data-loader]').classList.add('hide');
+                }
+            }
+        };
+
+        //------------
+        // INITIALIZE
+        //------------
+        atcBuyNow.init();
+    });
+</script>
+
+<style>
+    .section-variant, .btn.collection-atc {
+        position: relative;
+        z-index: 3;
+        width: 100% !important;
+        height: 42px;
+    }
+
+    .btn.collection-atc {
+        margin-top: 1em;
+    }
+</style>

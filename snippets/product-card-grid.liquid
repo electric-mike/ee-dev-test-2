@@ -46,4 +46,51 @@
 
   {% include 'product-price-listing', product: product, show_vendor: show_vendor %}
 
+  {% if settings.enable_collection_buy_now and product.available %}
+    {% assign current_variant = product.variants.first.id %}
+    {% if settings.enable_select_variant and product.variants.size > 1 %}
+      <select name="id" class="section-variant">
+        {% for variant in product.variants %}
+          {% assign variant_image = variant.image | img_url: '1x1' | replace: '_1x1.', '_{width}x.' %}
+          <option value="{{ variant.id }}"
+            data-price="{{ variant.price | money }}"
+            data-image="{{ variant_image }}"
+            data-available="{{ variant.available }}"
+            {% if variant.available == false %}disabled="disabled"{% endif %}
+            {%- if variant == current_variant %} selected="selected" {%- endif -%}
+          >
+            {{ variant.title }}  {%- if variant.available == false %} - {{ 'products.product.sold_out' | t }}{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    {% endif %}
+    <button 
+      type="button" 
+      class="btn collection-atc" 
+      data-variant-id="{{ current_variant }}"
+      data-atc-buy-now
+      data-add-to-cart
+    >
+      <span data-add-to-cart-text>
+        {% if product.variants.first.available %}
+          {% if settings.enable_collection_atc_override %}
+            Add to cart
+          {% else %}
+            Buy it now
+          {% endif %}
+        {% else %}
+          Sold out
+        {% endif %}
+      </span>
+      <span class="hide" data-loader>
+        {% include 'icon-spinner' %}
+      </span>
+    </button>
+    <div class="product-form__error-message-wrapper product-form__error-message-wrapper--hidden" data-error-message-wrapper role="alert">
+      <span class="visually-hidden">{{ 'general.accessibility.error' | t }} </span>
+      {% include 'icon-error' %}
+      <span class="product-form__error-message" data-error-message></span>
+    </div>
+  {% endif %}
+
 </div>

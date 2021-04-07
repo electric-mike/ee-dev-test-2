@@ -5380,7 +5380,8 @@ hr {
   margin-top: 0.5rem; }
   .price__badges--listing .price__badge {
     font-size: 0.6em;
-    padding: 0.25rem 0.55rem; }
+    padding: 0.25rem 0.55rem; 
+    margin-bottom: 1.25em; }
 
 /*================ Module | Filters and Sort toolbar and selection ================*/
 .filters-toolbar-wrapper {
