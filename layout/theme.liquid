@@ -24,6 +24,10 @@
   <link rel="preload" href="{{ 'theme.js' | asset_url }}" as="script">
   <link rel="preload" href="{{ 'lazysizes.js' | asset_url }}" as="script">
 
+  {% if template contains 'collection' and settings.enable_collection_buy_now %}
+    {% include 'collection-atc-buy-now' %}
+  {% endif %}
+
   {%- if canonical_url != blank  -%}
     <link rel="canonical" href="{{ canonical_url }}">
   {%- endif -%}

@@ -1635,5 +1635,31 @@
         "default": true
       }
     ]
+  },
+  {
+    "name": "Collection",
+    "settings": [
+      {
+        "type": "checkbox",
+        "id": "enable_collection_buy_now",
+        "label": "Enable Collection Buy Now Button",
+        "info": "Buy Now Button will add a product to cart, and redirect to checkout",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "enable_collection_atc_override",
+        "label": "Add To Cart Override",
+        "info": "Transform Buy Now button into an Add To Cart button, which operates like a normal PDP add to cart, and does not redirect to checkout",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "enable_select_variant",
+        "label": "Enable Select Variant",
+        "info": "Variant select will show above the ATC/Buy Now Button",
+        "default": true
+      }
+    ]
   }
 ]
